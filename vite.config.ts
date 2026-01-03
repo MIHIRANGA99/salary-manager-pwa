@@ -21,6 +21,10 @@ export default defineConfig({
         display: 'standalone',
         scope: '/',
         start_url: '/',
+        orientation: 'portrait',
+        categories: ['finance', 'productivity', 'utilities'],
+        // proper IARC rating id if available, otherwise omit or use a placeholder if strict
+        // iarc_rating_id: '...', 
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -39,6 +43,39 @@ export default defineConfig({
             purpose: 'any maskable',
           },
         ],
+        screenshots: [
+          {
+            src: '/screenshots/mobile-1.png',
+            sizes: '1080x1920',
+            type: 'image/png',
+            platform: 'android',
+            label: 'Home Screen'
+          },
+          {
+            src: '/screenshots/mobile-2.png',
+            sizes: '1080x1920',
+            type: 'image/png',
+            platform: 'android',
+            label: 'Analytics Dashboard'
+          },
+          {
+            src: '/screenshots/desktop-1.png',
+            sizes: '1920x1080',
+            type: 'image/png',
+            platform: 'windows',
+            form_factor: 'wide',
+            label: 'Desktop View'
+          }
+        ],
+        shortcuts: [
+          {
+            name: "Add Expense",
+            short_name: "Add",
+            description: "Quickly add a new expense",
+            url: "/?action=add-expense",
+            icons: [{ src: "/pwa-192x192.png", sizes: "192x192" }]
+          }
+        ]
       },
     }),
     tailwindcss()

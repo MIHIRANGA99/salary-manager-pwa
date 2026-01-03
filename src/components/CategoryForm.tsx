@@ -9,6 +9,7 @@ interface CategoryFormProps {
 const CategoryForm: React.FC<CategoryFormProps> = ({ onAddCategory }) => {
   const [name, setName] = useState<string>('');
   const [budgetId, setBudgetId] = useState<string>(''); // Changed to string for input type="number"
+  const [showWeeklyBalance, setShowWeeklyBalance] = useState<boolean>(true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,9 +18,10 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onAddCategory }) => {
       alert('Please enter a valid category name and a positive budget amount.');
       return;
     }
-    onAddCategory({ name, budgetId: budgetIdNum });
+    onAddCategory({ name, budgetId: budgetIdNum, showWeeklyBalance });
     setName('');
     setBudgetId('');
+    setShowWeeklyBalance(true);
   };
 
   return (
@@ -49,6 +51,18 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onAddCategory }) => {
           required
           min="0"
         />
+      </div>
+      <div className="mb-4 flex items-center">
+        <input
+          type="checkbox"
+          id="showWeeklyBalance"
+          checked={showWeeklyBalance}
+          onChange={(e) => setShowWeeklyBalance(e.target.checked)}
+          className="mr-2 leading-tight"
+        />
+        <label htmlFor="showWeeklyBalance" className="text-sm text-gray-700 font-medium">
+          Show Weekly Balance
+        </label>
       </div>
       <button
         type="submit"

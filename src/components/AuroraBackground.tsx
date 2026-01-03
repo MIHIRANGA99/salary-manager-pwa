@@ -20,7 +20,7 @@ export const AuroraBackground = ({
         {...(props as any)}
       >
         <div
-          className="absolute inset-0 overflow-hidden"
+          className="absolute inset-0 overflow-hidden pointer-events-none"
           style={
             {
               "--aurora":
@@ -49,7 +49,9 @@ export const AuroraBackground = ({
             )}
           ></div>
         </div>
-        {children}
+        <div className="relative z-10 w-full overflow-y-auto h-full">
+           {children}
+        </div>
       </div>
     </main>
   );

@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { FaHome, FaCog, FaPlus } from 'react-icons/fa';
+import { FaHome, FaCog, FaPlus, FaHistory } from 'react-icons/fa';
 
 const menuItems = [
   { path: '/', label: 'Home', icon: FaHome },
-  { path: '/log-expense', label: 'Log Expense', icon: FaPlus },
+  { path: '/log-expense', label: 'Log', icon: FaPlus },
+  { path: '/history', label: 'History', icon: FaHistory },
   { path: '/settings', label: 'Settings', icon: FaCog },
 ];
 

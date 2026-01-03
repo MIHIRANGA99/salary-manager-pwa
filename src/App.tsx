@@ -2,14 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import BottomNav from './components/BottomNav';// Import AuroraBackground
 import { getFromLocalStorage, saveToLocalStorage, generateUniqueId } from './utils/localStorage';
-import { getDaysInMonth, getTodayDateString } from './utils/dateUtils';
 import type { Category, Expense } from './types';
 
 // Page Components
 import HomePage from './pages/HomePage';
 import SettingsPage from './pages/SettingsPage';
 import LogExpensePage from './pages/LogExpensePage';
+import HistoryPage from './pages/HistoryPage';
 import { AuroraBackground } from './components/AuroraBackground';
+
+import { calculateDailyBudgets } from './utils/budgetCalculations';
+
+// ... (other imports remain the same)
 
 function App() {
   const [monthlySalary, setMonthlySalary] = useState<number | null>(null);
@@ -18,18 +22,76 @@ function App() {
 
   useEffect(() => {
     const storedSalary = getFromLocalStorage('monthlySalary');
-    if (storedSalary) {
-      setMonthlySalary(parseFloat(storedSalary));
+    const storedCategoriesStr = getFromLocalStorage('categories');
+    const storedExpensesStr = getFromLocalStorage('expenses');
+
+    // Check for new month
+    const lastActiveMonth = getFromLocalStorage('lastActiveMonth');
+    const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+
+    if (lastActiveMonth && lastActiveMonth !== currentMonth) {
+        // New month detected! Archive the old data first.
+        const prevSalary = storedSalary ? parseFloat(storedSalary) : 0;
+        const prevExpenses: Expense[] = storedExpensesStr ? JSON.parse(storedExpensesStr) : [];
+        const prevCategories: Category[] = storedCategoriesStr ? JSON.parse(storedCategoriesStr) : [];
+
+        // Calculate summary
+        let totalSpentInMonth = 0;
+        const categorySummaries: any[] = prevCategories.map(cat => {
+            const catExpenses = prevExpenses.filter(e => e.categoryId === cat.id);
+            const catSpent = catExpenses.reduce((sum, e) => sum + e.amount, 0);
+            totalSpentInMonth += catSpent;
+            return {
+                categoryId: cat.id,
+                categoryName: cat.name,
+                allocatedBudget: cat.budgetId,
+                totalSpent: catSpent,
+                saved: cat.budgetId - catSpent
+            };
+        });
+
+        // Other expenses (not in current categories - unlikely but possible if cats deleted? 
+        // Actually expenses delete when cat deletes. So logical consistency holds.)
+
+        const historyItem = {
+            id: lastActiveMonth,
+            monthLabel: new Date(lastActiveMonth + "-01").toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            salary: prevSalary,
+            totalSpent: totalSpentInMonth,
+            totalSaved: prevSalary - totalSpentInMonth,
+            categories: categorySummaries
+        };
+
+        const existingHistory = getFromLocalStorage('expenseHistory');
+        const history = existingHistory ? JSON.parse(existingHistory) : [];
+        history.push(historyItem);
+        saveToLocalStorage('expenseHistory', JSON.stringify(history));
+
+        // Reset relevant data
+        setMonthlySalary(null);
+        setExpenses([]);
+        saveToLocalStorage('lastActiveMonth', currentMonth);
+        saveToLocalStorage('monthlySalary', '');
+        saveToLocalStorage('expenses', JSON.stringify([]));
+        
+    } else {
+        // Same month or first run, load data as usual
+        if (storedSalary) {
+            setMonthlySalary(parseFloat(storedSalary));
+        }
+
+        if (storedExpensesStr) {
+            setExpenses(JSON.parse(storedExpensesStr));
+        }
+
+        // Initialize current month if not set (first run)
+        if (!lastActiveMonth) {
+             saveToLocalStorage('lastActiveMonth', currentMonth);
+        }
     }
 
-    const storedCategories = getFromLocalStorage('categories');
-    if (storedCategories) {
-      setCategories(JSON.parse(storedCategories));
-    }
-
-    const storedExpenses = getFromLocalStorage('expenses');
-    if (storedExpenses) {
-      setExpenses(JSON.parse(storedExpenses));
+    if (storedCategoriesStr) {
+      setCategories(JSON.parse(storedCategoriesStr));
     }
   }, []);
 
@@ -62,6 +124,7 @@ function App() {
   const deleteCategory = (id: string) => {
     setCategories((prevCategories) => prevCategories.filter((cat) => cat.id !== id));
     setExpenses((prevExpenses) => prevExpenses.filter((exp) => exp.categoryId !== id));
+    // Also remove expenses for this category
   };
 
   const addExpense = (newExpense: Omit<Expense, 'id'>) => {
@@ -69,50 +132,23 @@ function App() {
     setExpenses((prevExpenses) => [...prevExpenses, expenseWithId]);
   };
 
-  const todayDate = getTodayDateString();
-  const currentMonthYear = new Date().toISOString().split('T')[0].slice(0, 7); // YYYY-MM
+  const updateExpense = (updatedExpense: Expense) => {
+    setExpenses((prevExpenses) =>
+      prevExpenses.map((exp) => (exp.id === updatedExpense.id ? updatedExpense : exp))
+    );
+  };
 
-  const dailySpentAmountPerCategory = useMemo(() => {
-    const dailySpent: { [key: string]: number } = {};
-    expenses.filter(exp => exp.date === todayDate)
-             .forEach(exp => {
-                dailySpent[exp.categoryId] = (dailySpent[exp.categoryId] || 0) + exp.amount;
-             });
-    return dailySpent;
-  }, [expenses, todayDate]);
+  const deleteExpense = (id: string) => {
+    setExpenses((prevExpenses) => prevExpenses.filter((exp) => exp.id !== id));
+  };
+
+
+
+
 
   const dailyCategoryBudgets = useMemo(() => {
-    if (!monthlySalary || categories.length === 0) return {};
-
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth() + 1; // getMonth() is 0-indexed
-    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-    const remainingDays = daysInMonth - today.getDate() + 1; // +1 to include today
-
-    const totalSpentInMonthPerCategory: { [key: string]: number } = {};
-    expenses.filter(exp => exp.date.startsWith(currentMonthYear))
-            .forEach(exp => {
-              totalSpentInMonthPerCategory[exp.categoryId] = (totalSpentInMonthPerCategory[exp.categoryId] || 0) + exp.amount;
-            });
-
-    const budgets: { [key: string]: number } = {};
-    categories.forEach(category => {
-      const spentSoFar = totalSpentInMonthPerCategory[category.id] || 0;
-      const remainingMonthlyBudget = category.budgetId - spentSoFar;
-      
-      if (remainingDays <= 0) {
-        budgets[category.id] = remainingMonthlyBudget; // All budget for today if last day
-      } else {
-        budgets[category.id] = remainingMonthlyBudget / remainingDays;
-      }
-      
-      if (budgets[category.id] < 0) {
-        budgets[category.id] = 0;
-      }
-    });
-    return budgets;
-  }, [monthlySalary, categories, expenses, currentMonthYear]);
+    return calculateDailyBudgets(monthlySalary, categories, expenses);
+  }, [monthlySalary, categories, expenses]);
 
   return (
     <BrowserRouter>
@@ -127,9 +163,11 @@ function App() {
                   expenses={expenses} 
                   salary={monthlySalary}
                   dailyBudgets={dailyCategoryBudgets}
-                  dailySpentAmounts={dailySpentAmountPerCategory}
+
                   updateCategory={updateCategory}
-                  deleteCategory={deleteCategory} 
+                  deleteCategory={deleteCategory}
+                  updateExpense={updateExpense}
+                  deleteExpense={deleteExpense}
                 />
               } 
             />
@@ -149,6 +187,12 @@ function App() {
                   categories={categories} 
                   onAddExpense={addExpense} 
                 />
+              } 
+            />
+             <Route 
+              path="/history" 
+              element={
+                <HistoryPage />
               } 
             />
           </Routes>
