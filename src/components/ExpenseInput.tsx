@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { Category, Expense } from '../types';
 import Input from './Input';
+import { fadeInUp } from '../utils/animationVariants';
 
 interface ExpenseInputProps {
   categories: Category[];
@@ -32,18 +34,27 @@ const ExpenseInput: React.FC<ExpenseInputProps> = ({ categories, onAddExpense })
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-white shadow-md rounded-lg mb-4 text-gray-800">
+    <motion.form 
+      onSubmit={handleSubmit} 
+      className="p-4 bg-white shadow-md rounded-lg mb-4 text-gray-800"
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+    >
       <h2 className="text-xl font-semibold mb-2">Log Daily Expense</h2>
       <div className="mb-3">
         <label htmlFor="expenseCategory" className="block text-gray-700 text-sm font-bold mb-2">
           Category:
         </label>
-        <select
+        <motion.select
           id="expenseCategory"
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline input-gradient-focus"
           required
+          whileFocus={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: 'spring' as const, stiffness: 300, damping: 20 }}
         >
           <option value="">Select a Category</option>
           {categories.map((category) => (
@@ -51,7 +62,7 @@ const ExpenseInput: React.FC<ExpenseInputProps> = ({ categories, onAddExpense })
               {category.name}
             </option>
           ))}
-        </select>
+        </motion.select>
       </div>
       <div className="mb-4">
         <Input
@@ -67,13 +78,15 @@ const ExpenseInput: React.FC<ExpenseInputProps> = ({ categories, onAddExpense })
           step="0.01"
         />
       </div>
-      <button
+      <motion.button
         type="submit"
-        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        className="btn-gradient-emerald btn-glow-success text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        whileTap={{ scale: 0.95 }}
+        transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
       >
         Log Expense
-      </button>
-    </form>
+      </motion.button>
+    </motion.form>
   );
 };
 

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CategoryCard from './CategoryCard';
 import type { Category, Expense, BudgetMetrics } from '../types';
 import Input from './Input';
+import { staggerContainer, modalContent, modalBackdrop } from '../utils/animationVariants';
 
 interface CategoryListProps {
   categories: Category[];
@@ -25,9 +27,21 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, dailyBudgets, u
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
         {categories.length === 0 ? (
-          <p className="text-gray-400 col-span-full">No categories added yet.</p>
+          <motion.p 
+            className="text-gray-400 col-span-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            No categories added yet.
+          </motion.p>
         ) : (
           categories.map((category) => (
             <CategoryCard
@@ -39,51 +53,77 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, dailyBudgets, u
             />
           ))
         )}
-      </div>
+      </motion.div>
 
-      {editingCategory && (
-        <div className="mt-4 p-4 bg-white shadow-md rounded-lg text-gray-800">
-          <h3 className="text-lg font-semibold mb-2">Edit Category: {editingCategory.name}</h3>
-          <Input
-            type="text"
-            label="Category Name:"
-            value={editingCategory.name}
-            onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-            className="mb-2"
-          />
-          <Input
-            type="number"
-            label="Budget Amount:"
-            value={editingCategory.budgetId}
-            onChange={(e) => setEditingCategory({ ...editingCategory, budgetId: parseFloat(e.target.value) })}
-            className="mb-2"
-          />
-           <div className="mb-4 flex items-center">
-            <input
-              type="checkbox"
-              id="editShowWeeklyBalance"
-              checked={editingCategory.showWeeklyBalance ?? true}
-              onChange={(e) => setEditingCategory({ ...editingCategory, showWeeklyBalance: e.target.checked })}
-              className="mr-2 leading-tight"
+      <AnimatePresence>
+        {editingCategory && (
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black bg-opacity-60 z-40 backdrop-blur-sm"
+              variants={modalBackdrop}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={() => setEditingCategory(null)}
             />
-            <label htmlFor="editShowWeeklyBalance" className="text-sm text-gray-700 font-medium">
-              Show Weekly Balance
-            </label>
-          </div>
-          <button
-            onClick={handleUpdateCategory}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
-          >
-            Save Changes
-          </button>
-          <button
-            onClick={() => setEditingCategory(null)}
-            className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
+            <motion.div
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-11/12 max-w-md p-4 bg-white shadow-2xl rounded-lg text-gray-800"
+              variants={modalContent}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              <h3 className="text-lg font-semibold mb-4">Edit Category: {editingCategory.name}</h3>
+              <Input
+                type="text"
+                label="Category Name:"
+                value={editingCategory.name}
+                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                className="mb-2"
+              />
+              <Input
+                type="number"
+                label="Budget Amount:"
+                value={editingCategory.budgetId}
+                onChange={(e) => setEditingCategory({ ...editingCategory, budgetId: parseFloat(e.target.value) })}
+                className="mb-2"
+              />
+              <div className="mb-4 flex items-center">
+                <motion.input
+                  type="checkbox"
+                  id="editShowWeeklyBalance"
+                  checked={editingCategory.showWeeklyBalance ?? true}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, showWeeklyBalance: e.target.checked })}
+                  className="checkbox-gradient mr-2 leading-tight"
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
+                />
+                <label htmlFor="editShowWeeklyBalance" className="text-sm text-gray-700 font-medium">
+                  Show Weekly Balance
+                </label>
+              </div>
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={handleUpdateCategory}
+                  className="flex-1 btn-gradient-emerald btn-glow-success text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
+                >
+                  Save Changes
+                </motion.button>
+                <motion.button
+                  onClick={() => setEditingCategory(null)}
+                  className="flex-1 btn-gradient-secondary text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
+                >
+                  Cancel
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

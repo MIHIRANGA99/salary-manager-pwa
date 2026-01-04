@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import type { Category } from '../types';
 import Input from './Input';
+import { fadeInUp, successAnimation, shakeAnimation } from '../utils/animationVariants';
 
 interface CategoryFormProps {
   onAddCategory: (category: Omit<Category, 'id'>) => void;
@@ -10,22 +12,37 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onAddCategory }) => {
   const [name, setName] = useState<string>('');
   const [budgetId, setBudgetId] = useState<string>(''); // Changed to string for input type="number"
   const [showWeeklyBalance, setShowWeeklyBalance] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const budgetIdNum = parseFloat(budgetId);
     if (name.trim() === '' || isNaN(budgetIdNum) || budgetIdNum < 0) {
+      setHasError(true);
+      setTimeout(() => setHasError(false), 400);
       alert('Please enter a valid category name and a positive budget amount.');
       return;
     }
+    
+    setIsSubmitting(true);
     onAddCategory({ name, budgetId: budgetIdNum, showWeeklyBalance });
     setName('');
     setBudgetId('');
     setShowWeeklyBalance(true);
+    
+    // Reset submit animation
+    setTimeout(() => setIsSubmitting(false), 500);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-linear-30 from-green-50 to-green-100 shadow-md rounded-lg mb-4">
+    <motion.form 
+      onSubmit={handleSubmit} 
+      className="p-4 bg-linear-30 from-green-50 to-green-100 shadow-md rounded-lg mb-4"
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+    >
       <h2 className="text-xl font-semibold mb-2 text-gray-800">Add New Category</h2>
       <div className="mb-3">
         <Input
@@ -52,25 +69,33 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ onAddCategory }) => {
           min="0"
         />
       </div>
-      <div className="mb-4 flex items-center">
-        <input
+      <motion.div 
+        className="mb-4 flex items-center"
+        animate={hasError ? shakeAnimation : {}}
+      >
+        <motion.input
           type="checkbox"
           id="showWeeklyBalance"
           checked={showWeeklyBalance}
           onChange={(e) => setShowWeeklyBalance(e.target.checked)}
-          className="mr-2 leading-tight"
+          className="checkbox-gradient mr-2 leading-tight"
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
         />
         <label htmlFor="showWeeklyBalance" className="text-sm text-gray-700 font-medium">
           Show Weekly Balance
         </label>
-      </div>
-      <button
+      </motion.div>
+      <motion.button
         type="submit"
-        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        className="btn-gradient-success btn-glow-success text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        whileTap={{ scale: 0.95 }}
+        animate={isSubmitting ? successAnimation : {}}
+        transition={{ type: 'spring' as const, stiffness: 400, damping: 17 }}
       >
         Add Category
-      </button>
-    </form>
+      </motion.button>
+    </motion.form>
   );
 };
 

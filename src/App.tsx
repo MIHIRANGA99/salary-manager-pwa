@@ -1,24 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import BottomNav from './components/BottomNav';// Import AuroraBackground
+import { BrowserRouter } from 'react-router-dom';
+import BottomNav from './components/BottomNav';
 import { getFromLocalStorage, saveToLocalStorage, generateUniqueId } from './utils/localStorage';
 import type { Category, Expense } from './types';
-
-// Page Components
-import HomePage from './pages/HomePage';
-import SettingsPage from './pages/SettingsPage';
-import LogExpensePage from './pages/LogExpensePage';
-import HistoryPage from './pages/HistoryPage';
 import { AuroraBackground } from './components/AuroraBackground';
-
 import { calculateDailyBudgets } from './utils/budgetCalculations';
-
-// ... (other imports remain the same)
+import { AnimatedRoutes } from './AnimatedRoutes';
 
 function App() {
   const [monthlySalary, setMonthlySalary] = useState<number | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const storedSalary = getFromLocalStorage('monthlySalary');
@@ -93,16 +86,19 @@ function App() {
     if (storedCategoriesStr) {
       setCategories(JSON.parse(storedCategoriesStr));
     }
+    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (categories.length > 0) {
+    if (isLoaded) {
       saveToLocalStorage('categories', JSON.stringify(categories));
     }
   }, [categories]);
 
   useEffect(() => {
-    saveToLocalStorage('expenses', JSON.stringify(expenses));
+    if (isLoaded) {
+      saveToLocalStorage('expenses', JSON.stringify(expenses));
+    }
   }, [expenses]);
 
   const handleSalaryChange = (salary: number) => {
@@ -154,48 +150,19 @@ function App() {
     <BrowserRouter>
     <AuroraBackground showRadialGradient>
         <div className="min-h-screen text-slate-100 pb-16">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <HomePage 
-                  categories={categories} 
-                  expenses={expenses} 
-                  salary={monthlySalary}
-                  dailyBudgets={dailyCategoryBudgets}
-
-                  updateCategory={updateCategory}
-                  deleteCategory={deleteCategory}
-                  updateExpense={updateExpense}
-                  deleteExpense={deleteExpense}
-                />
-              } 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <SettingsPage 
-                  onSalaryChange={handleSalaryChange} 
-                  onAddCategory={addCategory} 
-                />
-              } 
-            />
-            <Route 
-              path="/log-expense" 
-              element={
-                <LogExpensePage 
-                  categories={categories} 
-                  onAddExpense={addExpense} 
-                />
-              } 
-            />
-             <Route 
-              path="/history" 
-              element={
-                <HistoryPage />
-              } 
-            />
-          </Routes>
+          <AnimatedRoutes 
+            categories={categories}
+            expenses={expenses}
+            monthlySalary={monthlySalary}
+            dailyCategoryBudgets={dailyCategoryBudgets}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
+            updateExpense={updateExpense}
+            deleteExpense={deleteExpense}
+            handleSalaryChange={handleSalaryChange}
+            addCategory={addCategory}
+            addExpense={addExpense}
+          />
           <BottomNav />
         </div>
       </AuroraBackground>
